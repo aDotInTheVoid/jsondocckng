@@ -6,7 +6,7 @@ use fs_err as fs;
 use rustdoc_types::Crate;
 
 #[path = "../json_tests/tests.rs"]
-pub(crate) mod tests;
+mod tests;
 
 #[derive(Debug, Clone, Copy)]
 enum Version {
@@ -68,6 +68,24 @@ fn load_json(v: Version, file: &Utf8Path) -> Result<Crate> {
     return Ok(krate);
 }
 
-fn main() -> Result<()> {
-    bail!("Usage: cargo test");
+#[macro_export]
+macro_rules! json_tests {
+    ($($name:ident)*) => {
+        paste::paste!{
+        $(
+            mod [<$name _test>];
+            #[test]
+            fn $name() {
+
+                // [<$name>] will convert r#enum to enum
+                let path = camino::Utf8PathBuf::from(file!()).parent().unwrap().join(stringify!([<$name>])).with_extension("rs");
+
+                let krate = crate::load_json(
+                    crate::Version::Nightly, &path
+                ).unwrap();
+                [<$name _test>]::test(krate);
+            }
+        )*
+    }
+    }
 }
