@@ -1,10 +1,12 @@
 use std::process::Command;
 
-use anyhow::{bail, ensure, Result};
+use anyhow::{bail, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use fs_err as fs;
-use guard::guard_unwrap;
-use rustdoc_types::{Crate, ItemEnum};
+use rustdoc_types::Crate;
+
+#[path = "../json_tests/tests.rs"]
+pub(crate) mod tests;
 
 #[derive(Debug, Clone, Copy)]
 enum Version {
@@ -28,59 +30,44 @@ fn load_json(v: Version, file: &Utf8Path) -> Result<Crate> {
         .join(file)
         .join(v.specifier());
 
-    let cmd = Command::new("rustdoc")
-        .arg(v.specifier())
-        .arg(
-            Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .join("tests")
-                .join(file),
-        )
+    let mut cmd = Command::new("rustdoc");
+    cmd.arg(v.specifier())
+        .arg(Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(file))
         .args(["--output-format", "json"])
         .args(["-Z", "unstable-options"])
         .arg("--output")
-        .arg(&output_dir)
-        .output()?;
+        .arg(&output_dir);
 
-    if !cmd.status.success() {
+    let output = cmd.output()?;
+
+    if !output.status.success() {
         // TODO: Use get_args() to get the command line arguments
-        let stderr = String::from_utf8_lossy(&cmd.stderr);
-        let stdout = String::from_utf8_lossy(&cmd.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+
+        let args = cmd
+            .get_args()
+            .map(|s| s.to_string_lossy())
+            .collect::<Vec<_>>()
+            .join(" ");
+
         bail!(
-            "`rustdoc {}` failed with status {}\n--- stderr ---\n{}\n--- stdout---\n{}\n---",
-            v.specifier(),
-            cmd.status,
+            "`rustdoc {}` failed with status {}\n=== stderr ===\n{}\n=== stdout===\n{}\n===",
+            args,
+            output.status,
             stderr,
             stdout
         );
     }
 
-    let json = fs::File::open(output_dir.join(file.with_extension("json")))?;
+    let fname = file.file_name().unwrap().replace(".rs", ".json");
+
+    let json = fs::File::open(output_dir.join(fname))?;
     let krate: Crate = serde_json::from_reader(json)?;
 
     return Ok(krate);
 }
 
 fn main() -> Result<()> {
-    let h = load_json(Version::Nightly, "hello.rs".into())?;
-
-    let hello = &h.index[&h.root];
-
-    assert_eq!(hello.name.as_ref().unwrap(), "hello");
-    assert_eq!(
-        hello.docs.as_ref().unwrap(),
-        "A crate that can print frendly greetings"
-    );
-    guard_unwrap!(let ItemEnum::Module(hmod) = &hello.inner);
-    guard_unwrap!(let [hid] = &hmod.items[..]);
-    let hello_fn_i = &h.index[&hid];
-    assert_eq!(hello_fn_i.name.as_ref().unwrap(), "hello");
-    assert_eq!(
-        hello_fn_i.docs.as_ref().unwrap(),
-        "Display a frendly greeting"
-    );
-    guard_unwrap!(let ItemEnum::Function(hfn) = &hello_fn_i.inner);
-    assert_eq!(hfn.decl.inputs, []);
-    assert_eq!(hfn.decl.output, None);
-
-    Ok(())
+    bail!("Usage: cargo test");
 }
