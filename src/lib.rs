@@ -2,7 +2,7 @@
 
 use std::{io::BufReader, process::Command};
 
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use from_item::FromItem;
 use fs_err as fs;
@@ -80,6 +80,16 @@ fn load_json(v: Version, file: &Utf8Path) -> Result<Crate> {
                 stderr,
                 stdout
             );
+        }
+
+        let o = Command::new("oj")
+            .args(["-p", "100"])
+            .arg(&output_json_file)
+            .output();
+        // Silently ignore if they dont have oj
+        if let Ok(o) = o {
+            ensure!(o.status.success());
+            fs::write(output_json_file.with_extension("prety.json"), o.stdout)?;
         }
     } else {
         eprintln!("Using cached {}", &output_json_file);
