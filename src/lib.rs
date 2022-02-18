@@ -4,9 +4,13 @@ use std::{io::BufReader, process::Command};
 
 use anyhow::{bail, Result};
 use camino::{Utf8Path, Utf8PathBuf};
+use from_item::FromItem;
 use fs_err as fs;
-use rustdoc_types::{Crate, Item, Module};
+use rustdoc_types::{Crate, Id, Item, Module};
 
+use crate::from_item::IntoKind;
+
+mod from_item;
 #[path = "../json_tests/tests.rs"]
 mod tests;
 
@@ -114,5 +118,39 @@ macro_rules! json_tests {
             }
         )*
     }
+    }
+}
+
+struct TCrate {
+    krate: Crate,
+}
+
+impl TCrate {
+    fn validate(&self) {
+        // TODO: Reimplement https://github.com/rust-lang/rust/blob/master/src/etc/check_missing_items.py
+    }
+
+    fn load_root<T: FromItem>(&self, name: &str) -> &T {
+        self.load_item_by_name(self.root(), name).into_kind()
+    }
+
+    fn load_root_id(&self, name: &str) -> Id {
+        self.load_item_by_name(self.root(), name).id.clone()
+    }
+
+    fn load_item_by_name(&self, m: &Module, name: &str) -> &Item {
+        // TODO: Check no duplicate names
+
+        for i in &m.items {
+            let i = &self.krate.index[&i];
+            if i.name.as_deref() == Some(name) {
+                return &i;
+            }
+        }
+        panic!("No item named {}", name);
+    }
+
+    fn root(&self) -> &Module {
+        Module::from_item(&self.krate.index[&self.krate.root])
     }
 }
