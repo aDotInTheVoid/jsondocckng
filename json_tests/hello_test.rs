@@ -1,10 +1,8 @@
 use rustdoc_types::*;
 
-use crate::from_item::IntoKind;
+use crate::{from_item::IntoKind, TCrate};
 
-pub(super) fn test(h: Crate) {
-    let k = crate::TCrate { krate: h };
-
+pub(super) fn test(k: TCrate) {
     assert_eq!(k.root_item().name.as_ref().unwrap(), "hello");
     assert_eq!(
         k.root_item().docs.as_ref().unwrap(),

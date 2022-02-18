@@ -89,16 +89,6 @@ fn load_json(v: Version, file: &Utf8Path) -> Result<Crate> {
     return Ok(krate);
 }
 
-fn load_by_name<'a>(c: &'a Crate, m: &Module, name: &str) -> &'a Item {
-    for i in &m.items {
-        let i = &c.index[&i];
-        if i.name.as_deref() == Some(name) {
-            return &i;
-        }
-    }
-    panic!("No item named {}", name);
-}
-
 #[macro_export]
 macro_rules! json_tests {
     ($($name:ident)*) => {
@@ -114,7 +104,8 @@ macro_rules! json_tests {
                 let krate = crate::load_json(
                     crate::Version::Nightly, &path
                 ).unwrap();
-                [<$name _test>]::test(krate);
+                let tcrate = crate::TCrate::new(krate);
+                [<$name _test>]::test(tcrate);
             }
         )*
     }
@@ -126,6 +117,12 @@ struct TCrate {
 }
 
 impl TCrate {
+    fn new(krate: Crate) -> Self {
+        let this = Self { krate };
+        this.validate();
+        this
+    }
+
     fn validate(&self) {
         // TODO: Reimplement https://github.com/rust-lang/rust/blob/master/src/etc/check_missing_items.py
     }

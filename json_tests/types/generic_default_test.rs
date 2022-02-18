@@ -1,10 +1,8 @@
-use std::vec;
-
 use rustdoc_types::*;
 
-pub(super) fn test(krate: Crate) {
-    let k = crate::TCrate { krate };
+use crate::TCrate;
 
+pub(super) fn test(k: TCrate) {
     let my_result: &Typedef = k.load_root("MyResult");
 
     assert_eq!(
