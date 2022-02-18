@@ -13,6 +13,7 @@ use crate::from_item::IntoKind;
 mod from_item;
 #[path = "../json_tests/tests.rs"]
 mod tests;
+mod validate;
 
 #[derive(Debug, Clone, Copy)]
 enum Version {
@@ -125,6 +126,10 @@ impl TCrate {
 
     fn validate(&self) {
         // TODO: Reimplement https://github.com/rust-lang/rust/blob/master/src/etc/check_missing_items.py
+        for (id, item) in &self.krate.index {
+            assert_eq!(id.0, item.id.0);
+            self.validate_item(item);
+        }
     }
 
     fn load_root<T: FromItem>(&self, name: &str) -> &T {
