@@ -1,23 +1,30 @@
-use guard::guard_unwrap;
 use rustdoc_types::*;
 
-pub(super) fn test(h: Crate) {
-    let hello = &h.index[&h.root];
+use crate::from_item::IntoKind;
 
-    assert_eq!(hello.name.as_ref().unwrap(), "hello");
+pub(super) fn test(h: Crate) {
+    let k = crate::TCrate { krate: h };
+
+    assert_eq!(k.root_item().name.as_ref().unwrap(), "hello");
     assert_eq!(
-        hello.docs.as_ref().unwrap(),
+        k.root_item().docs.as_ref().unwrap(),
         "A crate that can print frendly greetings"
     );
-    guard_unwrap!(let ItemEnum::Module(hmod) = &hello.inner);
-    guard_unwrap!(let [hid] = &hmod.items[..]);
-    let hello_fn_i = &h.index[&hid];
-    assert_eq!(hello_fn_i.name.as_ref().unwrap(), "hello");
+
+    assert_eq!(k.root().items.len(), 1);
+
+    let hello_fun = k.load_root_item("hello");
     assert_eq!(
-        hello_fn_i.docs.as_ref().unwrap(),
+        hello_fun.docs.as_ref().unwrap(),
         "Display a frendly greeting"
     );
-    guard_unwrap!(let ItemEnum::Function(hfn) = &hello_fn_i.inner);
-    assert_eq!(hfn.decl.inputs, []);
-    assert_eq!(hfn.decl.output, None);
+
+    assert_eq!(
+        hello_fun.into_kind::<Function>().decl,
+        FnDecl {
+            inputs: vec![],
+            output: None,
+            c_variadic: false
+        }
+    );
 }

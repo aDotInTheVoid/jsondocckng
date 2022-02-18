@@ -138,6 +138,18 @@ impl TCrate {
         self.load_item_by_name(self.root(), name).id.clone()
     }
 
+    fn load_root_item(&self, name: &str) -> &Item {
+        self.load_item_by_name(self.root(), name)
+    }
+
+    fn root(&self) -> &Module {
+        Module::from_item(self.root_item())
+    }
+
+    fn root_item(&self) -> &Item {
+        &self.krate.index[&self.krate.root]
+    }
+
     fn load_item_by_name(&self, m: &Module, name: &str) -> &Item {
         // TODO: Check no duplicate names
 
@@ -147,10 +159,7 @@ impl TCrate {
                 return &i;
             }
         }
+        // TODO: Better error
         panic!("No item named {}", name);
-    }
-
-    fn root(&self) -> &Module {
-        Module::from_item(&self.krate.index[&self.krate.root])
     }
 }
