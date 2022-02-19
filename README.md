@@ -7,6 +7,17 @@ This may eventually replace [`src/tools/jsondocck`](https://github.com/rust-lang
 The core idea is to serialize the json into a rust type, so we can write the tests
 in rust instead of jsonpath.
 
+## Usage
+
+```shell
+cargo test
+```
+
+or
+
+```shell
+cargo nextest run
+``` 
 
 ## License
 
